@@ -5,7 +5,7 @@ try:
     # 1. Conectar ao banco que está no Docker
     # Como o script roda no seu Windows, o 'host' é localhost
     conn = psycopg2.connect(
-        host="banco-dados",
+        host="localhost",
         database="meu_data_lake",
         user="admin",
         password="senha_eduzz"
