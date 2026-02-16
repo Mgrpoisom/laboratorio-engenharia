@@ -1,0 +1,13 @@
+# 1. Requisições e API (Base)
+requests
+
+# 2. Manipulação de Dados
+pandas
+
+# 3. Conexão com Banco de Dados (Driver + ORM)
+psycopg2-binary
+sqlalchemy
+
+# 4. Utilitários (Variáveis de ambiente e Agendamento)
+python-dotenv
+schedule

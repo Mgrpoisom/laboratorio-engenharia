@@ -1,12 +1,30 @@
+name: laboratorio-engenharia
+
 services:
-  # 1. Banco de Dados PostgreSQL
+  app_moedas:
+    build:
+      context: ./ingestao_moedas
+      dockerfile: Dockerfile
+    container_name: app_coleta_cripto
+    depends_on:
+      postgres_db:
+        condition: service_started
+    env_file:
+      - ./ingestao_moedas/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=postgres_db
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+    restart: always
+    networks:
+      - rede_dados
+
   postgres_db:
     image: postgres:15
     container_name: pg_engenharia
-    restart: always
-    # Adicionado para o banco também ler as variáveis do .env
-    env_file:
-      - ./ingestao_moedas/.env
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
@@ -15,19 +33,6 @@ services:
       - ./meus_dados_locais:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    networks:
-      - rede_dados
-
-  # 2. Automação de Moedas
-  app_moedas:
-    build: ./ingestao_moedas
-    container_name: app_coleta_cripto
-    depends_on:
-      - postgres_db
-    env_file:
-      - ./ingestao_moedas/.env
-    environment:
-      - PYTHONUNBUFFERED=1
     restart: always
     networks:
       - rede_dados
