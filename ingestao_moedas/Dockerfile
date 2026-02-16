@@ -1,14 +1,15 @@
-# 1. Base Python leve
-FROM python:3.9-slim
+FROM python:3.11-slim
 
-# 2. Diretório de trabalho no container
 WORKDIR /app
 
-# 3. Instalação das dependências necessárias para a CoinGecko e Postgres
-RUN pip install --no-cache-dir requests pandas sqlalchemy psycopg2-binary schedule
+# Copia explicitamente o arquivo para dentro do container
+COPY requirements.txt /app/requirements.txt
 
-# 4. Copia apenas o script desta pasta
-COPY dados_api_moedas.py .
+# Instala as dependências verificando se o arquivo existe
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. Execução do script
+# Copia o restante dos arquivos
+COPY . /app/
+
 CMD ["python", "dados_api_moedas.py"]
+

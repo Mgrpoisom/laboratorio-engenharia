@@ -1,20 +1,38 @@
+import os
 import requests
 import pandas as pd
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
 import schedule
 import time
-import sys
 
-# Configurações do seu banco Docker
-# O host 'postgres_db' deve ser o nome do serviço no docker-compose.yml
-DB_URL = "postgresql://admin:senha_eduzz@postgres_db:5432/meu_data_lake"
+# --- CONFIGURAÇÃO DE AMBIENTE ---
+# Garante a leitura do .env mesmo dentro do Docker
+diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+caminho_env = os.path.join(diretorio_atual, '.env')
+load_dotenv(caminho_env, override=True)
 
-# Criando o engine com pool_pre_ping para evitar conexões mortas
+# 1. Captura das variáveis com valores padrão de segurança
+user = os.getenv('DB_USER')
+password = os.getenv('DB_PASSWORD')
+host = os.getenv('DB_HOST')
+port = os.getenv('DB_PORT', '5432') # Default para 5432 se vier None
+db = os.getenv('DB_NAME')
+
+# 2. Monta a URL de conexão
+DB_URL = f"postgresql://{user}:{password}@{host}:{port}/{db}"
+
+# Diagnóstico inicial no log
+print(f"--- Diagnóstico de Inicialização ---")
+print(f"Conectando em: {host}:{port}")
+print(f"Banco: {db}")
+print(f"------------------------------------")
+
+# Criando o engine
 engine = create_engine(DB_URL, pool_pre_ping=True)
 
 def coletar_precos():
-    # sys.stdout.flush() garante que o print apareça no log do Docker na hora
-    print(f"Iniciando coleta em {pd.Timestamp.now()}...", flush=True)
+    print(f"\nIniciando coleta em {pd.Timestamp.now()}...", flush=True)
     
     url = "https://api.coingecko.com/api/v3/simple/price"
     params = {
@@ -26,30 +44,29 @@ def coletar_precos():
     
     try:
         response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status() # Garante que erro de API caia no except
+        response.raise_for_status()
         dados = response.json()
         
-        # Transforma o JSON em DataFrame
+        # Tratamento dos dados
         df = pd.DataFrame(dados).T.reset_index()
         df.columns = ['moeda', 'preco_usd', 'volume_24h', 'mudanca_24h']
         df['timestamp'] = pd.Timestamp.now()
 
-        # Salva no PostgreSQL
-        # O método to_sql já gerencia o commit automaticamente
+        # Inserção no Banco
         df.to_sql('monitoramento_cripto', engine, if_exists='append', index=False)
         
-        print(f">>> SUCESSO: {len(df)} linhas inseridas na tabela monitoramento_cripto.", flush=True)
+        print(f">>> SUCESSO: {len(df)} linhas inseridas no Postgres.", flush=True)
 
     except Exception as e:
         print(f"!!! ERRO NA COLETA OU BANCO: {e}", flush=True)
 
-# Agenda a tarefa para rodar a cada 1 minuto
+# Agendamento
 schedule.every(1).minutes.do(coletar_precos)
 
 if __name__ == "__main__":
     print("Automação ligada. Monitorando logs...", flush=True)
     
-    # Roda a primeira vez imediatamente
+    # Executa a primeira vez imediatamente
     coletar_precos() 
     
     while True:
