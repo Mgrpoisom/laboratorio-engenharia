@@ -1,21 +1,26 @@
-
 version: '3.8'
 
 services:
-  banco-dados:
+  # 1. Banco de Dados PostgreSQL
+  postgres_db:
     image: postgres:15
-    container_name: pg_engenharia_dados
+    container_name: pg_engenharia
     environment:
-      - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=senha_eduzz
+      - POSTGRES_USER=admin
       - POSTGRES_DB=meu_data_lake
+    volumes:
+      - ./meus_dados_locais:/var/lib/postgresql/data
     ports:
       - "5432:5432"
-    volumes:
-      # Cria a pasta 'meus_dados_locais' no mesmo local do arquivo
-      - ./meus_dados_locais:/var/lib/postgresql/data
 
-  adminer: # Interface para você ver o banco pelo navegador
-    image: adminer
-    ports:
-      - "8080:8080"
+  # 2. Automação de Moedas (CoinGecko)
+  app_moedas:
+    build: ./ingestao_moedas
+    container_name: app_coleta_cripto
+    depends_on:
+      - postgres_db
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DB_URL=postgresql://admin:senha_eduzz@postgres_db:5432/meu_data_lake
+    restart: always
