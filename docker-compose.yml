@@ -1,26 +1,37 @@
-version: '3.8'
-
 services:
   # 1. Banco de Dados PostgreSQL
   postgres_db:
     image: postgres:15
     container_name: pg_engenharia
+    restart: always
+    # Adicionado para o banco também ler as variáveis do .env
+    env_file:
+      - ./ingestao_moedas/.env
     environment:
-      - POSTGRES_PASSWORD=senha_eduzz
-      - POSTGRES_USER=admin
-      - POSTGRES_DB=meu_data_lake
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
     volumes:
       - ./meus_dados_locais:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - rede_dados
 
-  # 2. Automação de Moedas (CoinGecko)
+  # 2. Automação de Moedas
   app_moedas:
     build: ./ingestao_moedas
     container_name: app_coleta_cripto
     depends_on:
       - postgres_db
+    env_file:
+      - ./ingestao_moedas/.env
     environment:
       - PYTHONUNBUFFERED=1
-      - DB_URL=postgresql://admin:senha_eduzz@postgres_db:5432/meu_data_lake
     restart: always
+    networks:
+      - rede_dados
+
+networks:
+  rede_dados:
+    driver: bridge
