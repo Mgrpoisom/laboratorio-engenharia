@@ -1,0 +1,21 @@
+
+version: '3.8'
+
+services:
+  banco-dados:
+    image: postgres:15
+    container_name: pg_engenharia_dados
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=senha_eduzz
+      - POSTGRES_DB=meu_data_lake
+    ports:
+      - "5432:5432"
+    volumes:
+      # Cria a pasta 'meus_dados_locais' no mesmo local do arquivo
+      - ./meus_dados_locais:/var/lib/postgresql/data
+
+  adminer: # Interface para você ver o banco pelo navegador
+    image: adminer
+    ports:
+      - "8080:8080"
